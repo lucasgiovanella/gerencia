@@ -1,0 +1,16 @@
+{
+  "name": "gerencia-financeira",
+  "version": "1.0.0",
+  "description": "Registro de despesas e receitas",
+  "scripts": {
+    "dev": "bun run src/server.ts"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/pg": "^8.11.0"
+  }
+}
