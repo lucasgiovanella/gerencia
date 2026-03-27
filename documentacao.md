@@ -8,22 +8,28 @@ Aplicação web para registro e visualização de despesas e receitas, desenvolv
 
 | Módulo | Arquivo | Descrição |
 |---|---|---|
-| Servidor | `src/server.ts` | Servidor Express – CRUD de lançamentos e servir frontend |
+| Servidor | `src/server.ts` | Servidor Express – autenticação + CRUD de lançamentos |
 | Banco de Dados | `src/database.ts` | Pool de conexão PostgreSQL via `pg` |
-| Frontend | `public/index.html` | Interface HTML com formulário CRUD e tabela de listagem |
+| Login | `public/index.html` | Tela de login |
+| App | `public/app.html` | Interface CRUD de lançamentos (protegida por login) |
 | Init SQL | `init.sql` | DDL das tabelas + seed de dados |
 
-**Total: 2 módulos TypeScript + 1 página HTML + 1 script SQL**
+**Total: 2 módulos TypeScript + 2 páginas HTML + 1 script SQL**
 
 ### 1.2 Endpoints da API
 
 | Método | Rota | Descrição |
 |---|---|---|
+| POST | `/api/login` | Autenticar usuário |
+| POST | `/api/logout` | Encerrar sessão |
+| GET | `/api/me` | Verificar sessão atual |
 | GET | `/api/lancamentos` | Listar todos os lançamentos |
 | GET | `/api/lancamentos/:id` | Buscar lançamento por ID |
 | POST | `/api/lancamentos` | Criar novo lançamento |
 | PUT | `/api/lancamentos/:id` | Atualizar lançamento |
 | DELETE | `/api/lancamentos/:id` | Deletar lançamento |
+
+> **Nota:** Todas as rotas de `/api/lancamentos` exigem autenticação.
 
 ### 1.3 Modelagem do Banco de Dados
 
@@ -63,12 +69,10 @@ Aplicação web para registro e visualização de despesas e receitas, desenvolv
 
 ### 1.4 Interface Desenvolvida
 
-A aplicação possui uma interface web limpa e minimalista contendo:
+A aplicação possui duas telas:
 
-- **Formulário CRUD**: criar e editar lançamentos diretamente na página.
-- **Tabela de lançamentos**: listagem com ID, descrição, data, valor (BRL), tipo e situação.
-- **Botões de ação**: editar e excluir em cada linha da tabela.
-- Design responsivo para desktop e mobile.
+1. **Tela de login** (`/`) — campos de login e senha, redireciona para a área principal ao autenticar.
+2. **Tela principal** (`/app.html`) — exibe nome do usuário logado, formulário para criar/editar lançamentos, tabela com listagem e botões de editar/excluir, e botão de logout.
 
 ---
 
