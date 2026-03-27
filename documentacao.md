@@ -149,9 +149,27 @@ http://<IP_DA_VM>:3000
 | Publicação da aplicação | ___ min |
 | **Total** | **___ min** |
 
+## 4. Estrutura do Projeto
+
+```
+gerencia/
+├── docker-compose.yml
+├── Dockerfile
+├── init.sql
+├── package.json
+├── tsconfig.json
+├── documentacao.md
+├── public/
+│   ├── index.html        # Tela de login
+│   └── app.html          # Tela principal (CRUD)
+└── src/
+    ├── database.ts        # Conexão com PostgreSQL
+    └── server.ts          # Servidor Express (auth + CRUD)
+```
+
 ---
 
-## 4. Como Executar Localmente
+## 5. Como Executar Localmente
 
 ### Pré-requisitos
 
@@ -174,4 +192,5 @@ docker compose down
 docker compose down -v
 ```
 
-Acesse: **http://localhost:3000**
+Acesse: **http://localhost:3000** → faça login com `admin` / `admin123`.
+
