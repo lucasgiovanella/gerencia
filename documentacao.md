@@ -6,28 +6,28 @@ Aplicação web para registro e visualização de despesas e receitas, desenvolv
 
 ### 1.1 Estrutura do Projeto (Classes/Módulos)
 
-| Módulo | Arquivo | Descrição |
-|---|---|---|
-| Servidor | `src/server.ts` | Servidor Express – autenticação + CRUD de lançamentos |
-| Banco de Dados | `src/database.ts` | Pool de conexão PostgreSQL via `pg` |
-| Login | `public/index.html` | Tela de login |
-| App | `public/app.html` | Interface CRUD de lançamentos (protegida por login) |
-| Init SQL | `init.sql` | DDL das tabelas + seed de dados |
+| Módulo         | Arquivo             | Descrição                                             |
+| -------------- | ------------------- | ----------------------------------------------------- |
+| Servidor       | `src/server.ts`     | Servidor Express – autenticação + CRUD de lançamentos |
+| Banco de Dados | `src/database.ts`   | Pool de conexão PostgreSQL via `pg`                   |
+| Login          | `public/index.html` | Tela de login                                         |
+| App            | `public/app.html`   | Interface CRUD de lançamentos (protegida por login)   |
+| Init SQL       | `init.sql`          | DDL das tabelas + seed de dados                       |
 
 **Total: 2 módulos TypeScript + 2 páginas HTML + 1 script SQL**
 
 ### 1.2 Endpoints da API
 
-| Método | Rota | Descrição |
-|---|---|---|
-| POST | `/api/login` | Autenticar usuário |
-| POST | `/api/logout` | Encerrar sessão |
-| GET | `/api/me` | Verificar sessão atual |
-| GET | `/api/lancamentos` | Listar todos os lançamentos |
-| GET | `/api/lancamentos/:id` | Buscar lançamento por ID |
-| POST | `/api/lancamentos` | Criar novo lançamento |
-| PUT | `/api/lancamentos/:id` | Atualizar lançamento |
-| DELETE | `/api/lancamentos/:id` | Deletar lançamento |
+| Método | Rota                   | Descrição                   |
+| ------ | ---------------------- | --------------------------- |
+| POST   | `/api/login`           | Autenticar usuário          |
+| POST   | `/api/logout`          | Encerrar sessão             |
+| GET    | `/api/me`              | Verificar sessão atual      |
+| GET    | `/api/lancamentos`     | Listar todos os lançamentos |
+| GET    | `/api/lancamentos/:id` | Buscar lançamento por ID    |
+| POST   | `/api/lancamentos`     | Criar novo lançamento       |
+| PUT    | `/api/lancamentos/:id` | Atualizar lançamento        |
+| DELETE | `/api/lancamentos/:id` | Deletar lançamento          |
 
 > **Nota:** Todas as rotas de `/api/lancamentos` exigem autenticação.
 
@@ -35,24 +35,24 @@ Aplicação web para registro e visualização de despesas e receitas, desenvolv
 
 #### Tabela `usuario`
 
-| Coluna | Tipo | Restrições |
-|---|---|---|
-| id | SERIAL | PRIMARY KEY |
-| nome | VARCHAR(100) | NOT NULL |
-| login | VARCHAR(50) | NOT NULL, UNIQUE |
-| senha | VARCHAR(100) | NOT NULL |
-| situacao | VARCHAR(20) | NOT NULL, DEFAULT 'ativo' |
+| Coluna   | Tipo         | Restrições                |
+| -------- | ------------ | ------------------------- |
+| id       | SERIAL       | PRIMARY KEY               |
+| nome     | VARCHAR(100) | NOT NULL                  |
+| login    | VARCHAR(50)  | NOT NULL, UNIQUE          |
+| senha    | VARCHAR(100) | NOT NULL                  |
+| situacao | VARCHAR(20)  | NOT NULL, DEFAULT 'ativo' |
 
 #### Tabela `lancamento`
 
-| Coluna | Tipo | Restrições |
-|---|---|---|
-| id | SERIAL | PRIMARY KEY |
-| descricao | VARCHAR(200) | NOT NULL |
-| data_lancamento | DATE | NOT NULL |
-| valor | NUMERIC(10,2) | NOT NULL |
-| tipo_lancamento | VARCHAR(20) | NOT NULL, CHECK ('receita' ou 'despesa') |
-| situacao | VARCHAR(20) | NOT NULL, DEFAULT 'ativo' |
+| Coluna          | Tipo          | Restrições                               |
+| --------------- | ------------- | ---------------------------------------- |
+| id              | SERIAL        | PRIMARY KEY                              |
+| descricao       | VARCHAR(200)  | NOT NULL                                 |
+| data_lancamento | DATE          | NOT NULL                                 |
+| valor           | NUMERIC(10,2) | NOT NULL                                 |
+| tipo_lancamento | VARCHAR(20)   | NOT NULL, CHECK ('receita' ou 'despesa') |
+| situacao        | VARCHAR(20)   | NOT NULL, DEFAULT 'ativo'                |
 
 ```
 ┌──────────────────────┐       ┌──────────────────────────┐
@@ -81,7 +81,7 @@ A aplicação possui duas telas:
 ### 2.1 Como Acessar a VM
 
 ```bash
-ssh usuario@<IP_DA_VM>
+ssh lucas@177.44.248.109
 ```
 
 ### 2.2 Instalação das Ferramentas
@@ -118,7 +118,7 @@ sudo apt install -y git
 
 ```bash
 # Clonar o repositório
-git clone https://github.com/<SEU_USUARIO>/gerencia.git
+git clone git@github.com:lucasgiovanella/gerencia.git
 cd gerencia
 
 # Subir os containers
@@ -131,10 +131,11 @@ docker compose ps
 ### 2.4 URL de Acesso
 
 ```
-http://<IP_DA_VM>:3000
+http://177.44.248.109/:3000
 ```
 
 **Credenciais de acesso ao sistema:**
+
 - Login: `admin`
 - Senha: `admin123`
 
@@ -142,12 +143,12 @@ http://<IP_DA_VM>:3000
 
 ## 3. Tempos Gastos
 
-| Etapa | Tempo |
-|---|---|
-| Desenvolvimento da aplicação | ___ min |
-| Criação do ambiente na VM | ___ min |
-| Publicação da aplicação | ___ min |
-| **Total** | **___ min** |
+| Etapa                        | Tempo       |
+| ---------------------------- | ----------- |
+| Desenvolvimento da aplicação | 60 min      |
+| Criação do ambiente na VM    | 30 min      |
+| Publicação da aplicação      | 30 min      |
+| **Total**                    | **120 min** |
 
 ## 4. Estrutura do Projeto
 
@@ -192,5 +193,4 @@ docker compose down
 docker compose down -v
 ```
 
-Acesse: **http://localhost:3000** → faça login com `admin` / `admin123`.
-
+Acesse: **http://177.44.248.109:3000** → faça login com `admin` / `admin123`.
