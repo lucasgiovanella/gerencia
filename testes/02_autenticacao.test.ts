@@ -12,12 +12,12 @@ describe("02 - Testes de Autenticação e Sessão", () => {
   });
 
   it("03 - Não deve autenticar usuário com senha errada", async () => {
-    const res = await request(app).post("/api/login").send({ login: "admin", senha: "wrongpassword" });
+    const res = await request(app).post("/api/login").send({ login: "admin", senha: "senhaerrada" });
     expect(res.status).toBe(401);
   });
 
   it("04 - Não deve autenticar usuário inexistente", async () => {
-    const res = await request(app).post("/api/login").send({ login: "ghost", senha: "123" });
+    const res = await request(app).post("/api/login").send({ login: "outrousuario", senha: "123" });
     expect(res.status).toBe(401);
   });
 
