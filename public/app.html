@@ -1,271 +1,433 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gerência Financeira</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #f4f5f7;
-      color: #333;
-      padding: 2rem;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .topbar h1 { font-size: 1.5rem; color: #111; }
-
-    .topbar .user-info {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 0.85rem;
-      color: #555;
-    }
-
-    .btn-logout {
-      padding: 0.4rem 0.8rem;
-      background: #e2e2e2;
-      color: #333;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-logout:hover { background: #d0d0d0; }
-
-    /* ---- Formulário ---- */
-    .form-card {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .form-card h2 {
-      font-size: 1rem;
-      margin-bottom: 1rem;
-      color: #333;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-    }
-
-    .form-grid .full { grid-column: 1 / -1; }
-
-    label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #555;
-      margin-bottom: 0.25rem;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      background: #fafafa;
-    }
-
-    input:focus, select:focus {
-      outline: none;
-      border-color: #4f7df9;
-    }
-
-    .form-actions {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    button {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-primary { background: #4f7df9; color: #fff; }
-    .btn-secondary { background: #e2e2e2; color: #333; }
-    .btn-danger { background: #e74c3c; color: #fff; font-size: 0.75rem; padding: 0.35rem 0.6rem; }
-    .btn-edit { background: #f0ad4e; color: #fff; font-size: 0.75rem; padding: 0.35rem 0.6rem; }
-
-    /* ---- Tabela ---- */
-    .table-card {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-
-    thead { background: #f9f9f9; }
-
-    th {
-      text-align: left;
-      padding: 0.65rem 0.75rem;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: #777;
-      border-bottom: 1px solid #eee;
-    }
-
-    td {
-      padding: 0.6rem 0.75rem;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    tr:last-child td { border-bottom: none; }
-
-    .tag {
-      display: inline-block;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      font-weight: 600;
-    }
-
-    .tag-receita { background: #e6f9ee; color: #1a8a4a; }
-    .tag-despesa { background: #fde8e8; color: #c0392b; }
-
-    .actions { display: flex; gap: 0.35rem; }
-    .empty { text-align: center; padding: 2rem; color: #999; }
-
-    @media (max-width: 600px) {
-      body { padding: 1rem; }
-      .form-grid { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-
-  <div class="topbar">
-    <h1>💰 Gerência Financeira</h1>
-    <div class="user-info">
-      <span id="userName"></span>
-      <button class="btn-logout" onclick="logout()">Sair</button>
-    </div>
-  </div>
-
-  <!-- Formulário -->
-  <div class="form-card">
-    <h2 id="formTitle">Novo Lançamento</h2>
-    <form id="form">
-      <input type="hidden" id="editId" />
-      <div class="form-grid">
-        <div class="full">
-          <label for="descricao">Descrição</label>
-          <input type="text" id="descricao" required />
-        </div>
-        <div>
-          <label for="data_lancamento">Data</label>
-          <input type="date" id="data_lancamento" required />
-        </div>
-        <div>
-          <label for="valor">Valor (R$)</label>
-          <input type="number" id="valor" step="0.01" min="0" required />
-        </div>
-        <div>
-          <label for="tipo_lancamento">Tipo</label>
-          <select id="tipo_lancamento" required>
-            <option value="receita">Receita</option>
-            <option value="despesa">Despesa</option>
-          </select>
-        </div>
-        <div>
-          <label for="situacao">Situação</label>
-          <select id="situacao">
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn-primary" id="btnSubmit">Salvar</button>
-        <button type="button" class="btn-secondary" id="btnCancel" style="display:none" onclick="cancelEdit()">Cancelar</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- Tabela -->
-  <div class="table-card">
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Descrição</th>
-          <th>Data</th>
-          <th>Valor</th>
-          <th>Tipo</th>
-          <th>Situação</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="7" class="empty">Carregando...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <script>
-    const API = "/api/lancamentos";
-    const $ = (id) => document.getElementById(id);
-    const formatBRL = (v) => parseFloat(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    const formatDate = (d) => new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" });
-
-    // Verificar autenticação
-    async function checkAuth() {
-      const res = await fetch("/api/me");
-      if (!res.ok) return window.location.href = "/";
-      const user = await res.json();
-      $("userName").textContent = user.nome;
-    }
-
-    async function logout() {
-      await fetch("/api/logout", { method: "POST" });
-      window.location.href = "/";
-    }
-
-    // --- Carregar lista ---
-    async function load() {
-      const res = await fetch(API);
-      if (!res.ok) return window.location.href = "/";
-      const data = await res.json();
-      const tbody = $("tbody");
-
-      if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty">Nenhum lançamento encontrado.</td></tr>';
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerência Financeira</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
 
-      tbody.innerHTML = data.map(l => `
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        background: #f4f5f7;
+        color: #333;
+        padding: 2rem;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .topbar h1 {
+        font-size: 1.5rem;
+        color: #111;
+      }
+
+      .topbar .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.85rem;
+        color: #555;
+      }
+
+      .btn-logout {
+        padding: 0.4rem 0.8rem;
+        background: #e2e2e2;
+        color: #333;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn-logout:hover {
+        background: #d0d0d0;
+      }
+
+      /* ---- Formulário ---- */
+      .form-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .form-card h2 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        color: #333;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+
+      .form-grid .full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 0.25rem;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        background: #fafafa;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #4f7df9;
+      }
+
+      .form-actions {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      button {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background: #4f7df9;
+        color: #fff;
+      }
+      .btn-secondary {
+        background: #e2e2e2;
+        color: #333;
+      }
+      .btn-danger {
+        background: #e74c3c;
+        color: #fff;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.6rem;
+      }
+      .btn-edit {
+        background: #f0ad4e;
+        color: #fff;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.6rem;
+      }
+
+      /* ---- Filtros ---- */
+      .filters-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: flex-end;
+      }
+
+      .filters-card > div {
+        flex: 1;
+        min-width: 150px;
+      }
+
+      .btn-export {
+        background: #27ae60;
+        color: #fff;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        height: 35px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+      }
+
+      /* ---- Tabela ---- */
+      .table-card {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+
+      thead {
+        background: #f9f9f9;
+      }
+
+      th {
+        text-align: left;
+        padding: 0.65rem 0.75rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #777;
+        border-bottom: 1px solid #eee;
+      }
+
+      td {
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      .tag {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+
+      .tag-receita {
+        background: #e6f9ee;
+        color: #1a8a4a;
+      }
+      .tag-despesa {
+        background: #fde8e8;
+        color: #c0392b;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.35rem;
+      }
+      .empty {
+        text-align: center;
+        padding: 2rem;
+        color: #999;
+      }
+
+      @media (max-width: 600px) {
+        body {
+          padding: 1rem;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <h1>💰 Gerência Financeira</h1>
+      <div class="user-info">
+        <span id="userName"></span>
+        <button class="btn-logout" onclick="logout()">Sair</button>
+      </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="form-card">
+      <h2 id="formTitle">Novo Lançamento</h2>
+      <form id="form">
+        <input type="hidden" id="editId" />
+        <div class="form-grid">
+          <div class="full">
+            <label for="descricao">Descrição</label>
+            <input type="text" id="descricao" required />
+          </div>
+          <div class="full">
+            <label for="email_notificacao">E-mail para Notificação (Opcional)</label>
+            <input type="email" id="email_notificacao" placeholder="exemplo@email.com" />
+          </div>
+          <div>
+            <label for="data_lancamento">Data</label>
+            <input type="date" id="data_lancamento" required />
+          </div>
+          <div>
+            <label for="valor">Valor (R$)</label>
+            <input type="number" id="valor" step="0.01" min="0" required />
+          </div>
+          <div>
+            <label for="tipo_lancamento">Tipo</label>
+            <select id="tipo_lancamento" required>
+              <option value="receita">Receita</option>
+              <option value="despesa">Despesa</option>
+            </select>
+          </div>
+          <div>
+            <label for="situacao">Situação</label>
+            <select id="situacao">
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" id="btnSubmit">
+            Salvar
+          </button>
+          <button
+            type="button"
+            class="btn-secondary"
+            id="btnCancel"
+            style="display: none"
+            onclick="cancelEdit()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-card">
+      <div>
+        <label>Descrição</label>
+        <input
+          type="text"
+          id="filterDescricao"
+          placeholder="Filtrar por nome..."
+        />
+      </div>
+      <div>
+        <label>Data</label>
+        <input type="date" id="filterData" />
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="filterTipo">
+          <option value="">Todos</option>
+          <option value="receita">Receita</option>
+          <option value="despesa">Despesa</option>
+        </select>
+      </div>
+      <div>
+        <label>Situação</label>
+        <select id="filterSituacao">
+          <option value="">Todas</option>
+          <option value="ativo">Ativo</option>
+          <option value="inativo">Inativo</option>
+        </select>
+      </div>
+      <div style="flex: 0; display: flex; gap: 0.5rem">
+        <button class="btn-primary" onclick="load()" style="height: 35px">
+          Filtrar
+        </button>
+        <button class="btn-export" onclick="exportPDF()" style="height: 35px">
+          Exportar PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Descrição</th>
+            <th>Data</th>
+            <th>Valor</th>
+            <th>Tipo</th>
+            <th>Situação</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr>
+            <td colspan="7" class="empty">Carregando...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      const API = "/api/lancamentos";
+      const $ = (id) => document.getElementById(id);
+      const formatBRL = (v) =>
+        parseFloat(v).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+      const formatDate = (d) =>
+        new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+
+      // Verificar autenticação
+      async function checkAuth() {
+        const res = await fetch("/api/me");
+        if (!res.ok) return (window.location.href = "/");
+        const user = await res.json();
+        $("userName").textContent = user.nome;
+      }
+
+      async function logout() {
+        await fetch("/api/logout", { method: "POST" });
+        window.location.href = "/";
+      }
+
+      let currentData = [];
+
+      // --- Carregar lista ---
+      async function load() {
+        const params = new URLSearchParams();
+        if ($("filterDescricao").value)
+          params.append("descricao", $("filterDescricao").value);
+        if ($("filterData").value)
+          params.append("data_lancamento", $("filterData").value);
+        if ($("filterTipo").value)
+          params.append("tipo_lancamento", $("filterTipo").value);
+        if ($("filterSituacao").value)
+          params.append("situacao", $("filterSituacao").value);
+
+        const qs = params.toString();
+        const url = qs ? `${API}?${qs}` : API;
+
+        const res = await fetch(url);
+        if (!res.ok) return (window.location.href = "/");
+        const data = await res.json();
+        const tbody = $("tbody");
+        currentData = data;
+
+        if (!data.length) {
+          tbody.innerHTML =
+            '<tr><td colspan="7" class="empty">Nenhum lançamento encontrado.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data
+          .map(
+            (l) => `
         <tr>
           <td>${l.id}</td>
           <td>${l.descricao}</td>
@@ -278,74 +440,109 @@
             <button class="btn-danger" onclick="remove(${l.id})">Excluir</button>
           </td>
         </tr>
-      `).join("");
-    }
-
-    // --- Criar / Atualizar ---
-    $("form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const body = {
-        descricao: $("descricao").value,
-        data_lancamento: $("data_lancamento").value,
-        valor: parseFloat($("valor").value),
-        tipo_lancamento: $("tipo_lancamento").value,
-        situacao: $("situacao").value,
-      };
-
-      const editId = $("editId").value;
-
-      if (editId) {
-        await fetch(`${API}/${editId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      } else {
-        await fetch(API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
+      `,
+          )
+          .join("");
       }
 
-      cancelEdit();
-      $("form").reset();
+      // --- Exportar PDF ---
+      function exportPDF() {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+          alert(
+            "A biblioteca de PDF ainda está carregando. Tente novamente em instantes.",
+          );
+          return;
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.text("Relatório de Lançamentos", 14, 15);
+
+        const tableData = currentData.map((l) => [
+          l.id,
+          l.descricao,
+          formatDate(l.data_lancamento),
+          formatBRL(l.valor),
+          l.tipo_lancamento,
+          l.situacao,
+        ]);
+
+        doc.autoTable({
+          head: [["ID", "Descrição", "Data", "Valor", "Tipo", "Situação"]],
+          body: tableData,
+          startY: 20,
+        });
+
+        doc.save("lancamentos.pdf");
+      }
+
+      // --- Criar / Atualizar ---
+      $("form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const body = {
+          descricao: $("descricao").value,
+          data_lancamento: $("data_lancamento").value,
+          valor: parseFloat($("valor").value),
+          tipo_lancamento: $("tipo_lancamento").value,
+          situacao: $("situacao").value,
+          email_notificacao: $("email_notificacao").value,
+        };
+
+        const editId = $("editId").value;
+
+        if (editId) {
+          await fetch(`${API}/${editId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        } else {
+          await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        }
+
+        cancelEdit();
+        $("form").reset();
+        load();
+      });
+
+      // --- Editar ---
+      async function startEdit(id) {
+        const res = await fetch(`${API}/${id}`);
+        const l = await res.json();
+
+        $("editId").value = l.id;
+        $("descricao").value = l.descricao;
+        $("data_lancamento").value = l.data_lancamento.split("T")[0];
+        $("valor").value = l.valor;
+        $("tipo_lancamento").value = l.tipo_lancamento;
+        $("situacao").value = l.situacao;
+        $("email_notificacao").value = "";
+
+        $("formTitle").textContent = "Editar Lançamento #" + l.id;
+        $("btnSubmit").textContent = "Atualizar";
+        $("btnCancel").style.display = "inline-block";
+      }
+
+      function cancelEdit() {
+        $("editId").value = "";
+        $("formTitle").textContent = "Novo Lançamento";
+        $("btnSubmit").textContent = "Salvar";
+        $("btnCancel").style.display = "none";
+      }
+
+      // --- Deletar ---
+      async function remove(id) {
+        if (!confirm("Deseja excluir este lançamento?")) return;
+        await fetch(`${API}/${id}`, { method: "DELETE" });
+        load();
+      }
+
+      checkAuth();
       load();
-    });
-
-    // --- Editar ---
-    async function startEdit(id) {
-      const res = await fetch(`${API}/${id}`);
-      const l = await res.json();
-
-      $("editId").value = l.id;
-      $("descricao").value = l.descricao;
-      $("data_lancamento").value = l.data_lancamento.split("T")[0];
-      $("valor").value = l.valor;
-      $("tipo_lancamento").value = l.tipo_lancamento;
-      $("situacao").value = l.situacao;
-
-      $("formTitle").textContent = "Editar Lançamento #" + l.id;
-      $("btnSubmit").textContent = "Atualizar";
-      $("btnCancel").style.display = "inline-block";
-    }
-
-    function cancelEdit() {
-      $("editId").value = "";
-      $("formTitle").textContent = "Novo Lançamento";
-      $("btnSubmit").textContent = "Salvar";
-      $("btnCancel").style.display = "none";
-    }
-
-    // --- Deletar ---
-    async function remove(id) {
-      if (!confirm("Deseja excluir este lançamento?")) return;
-      await fetch(`${API}/${id}`, { method: "DELETE" });
-      load();
-    }
-
-    checkAuth();
-    load();
-  </script>
-</body>
+    </script>
+  </body>
 </html>

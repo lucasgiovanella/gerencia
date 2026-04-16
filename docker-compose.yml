@@ -30,6 +30,7 @@ services:
       DB_NAME: gerencia_db
       DB_USER: postgres
       DB_PASS: postgres
+      RESEND_API_KEY: ${RESEND_API_KEY}
     depends_on:
       db:
         condition: service_healthy

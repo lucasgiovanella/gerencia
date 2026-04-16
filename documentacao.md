@@ -74,6 +74,12 @@ A aplicação possui duas telas:
 1. **Tela de login** (`/`) — campos de login e senha, redireciona para a área principal ao autenticar.
 2. **Tela principal** (`/app.html`) — exibe nome do usuário logado, formulário para criar/editar lançamentos, tabela com listagem e botões de editar/excluir, e botão de logout.
 
+### 1.5 Novas Funcionalidades (Updates Recentes)
+
+1. **Notificações automáticas por E-mail:** Integração direta com a API da **Resend**. A plataforma dispara e-mails automáticos ao salvar e atualizar Lançamentos (com parâmetros de design). O destinatário é totalmente flexível pois pode ser definido na própria interface web, caindo na API em `req.body.email_notificacao`.
+2. **Filtro de Despesas Avançado:** Componentes de input nativos incorporados à UX que alimentam requisições inteligentes (`GET /api/lancamentos?descricao=...`). O sistema varre o PostgreSQL instantaneamente fazendo bind via `ILIKE`.
+3. **Exportação Modular para PDF:** Exporta perfeitamente os dados contidos na respectiva filtragem em PDF formatado no paradigma profissional de tabelamento através das bibliotecas dinâmicas cliente-side `jsPDF` e `jsPDF-AutoTable`.
+
 ---
 
 ## 2. Publicação na VM
@@ -162,10 +168,15 @@ gerencia/
 ├── documentacao.md
 ├── public/
 │   ├── index.html        # Tela de login
-│   └── app.html          # Tela principal (CRUD)
-└── src/
-    ├── database.ts        # Conexão com PostgreSQL
-    └── server.ts          # Servidor Express (auth + CRUD)
+│   └── app.html          # Tela principal (CRUD c/ filtros e gerador PDF)
+├── src/
+│   ├── database.ts        # Conexão com PostgreSQL
+│   └── server.ts          # Servidor Express (Auth, Filtros e integração E-mail)
+└── testes/
+    ├── 01_banco.test.ts          # Testes de Conexão com a pool do Postgres (SELECT 1)
+    ├── 02_autenticacao.test.ts   # Testes focados no bloqueio de login e injeção de Sessão
+    ├── 03_seguranca.test.ts      # Testes de Proteção de Rotas (Inibir 401 via Middlewares)
+    └── 04_lancamentos.test.ts    # Testes base de CRUD (Criação, Edição, Acionamento Backend Email e Remoção em cascata)
 ```
 
 ---
@@ -193,4 +204,22 @@ docker compose down
 docker compose down -v
 ```
 
-Acesse: **http://177.44.248.109:3000** → faça login com `admin` / `admin123`.
+Acesse: **http://177.44.248.109:3000** localmente em **http://localhost:3000** → faça login com `admin` / `admin123`.
+
+---
+
+## 6. Como Executar os Testes Automatizados (TDD)
+
+O projeto baseia-se na novíssima engine iterativa **`bun:test`** combinada com o **`supertest`** para injetar requisições web reais por debaixo dos panos mapeando todo o roteamento do back-end. A suíte divide-se em **4 arquivos totalizando 20 verificações estritas**.
+
+1. Garanta que o contêiner de banco de dados e o do servidor estejam onlines rodando juntos via processo padrão (`docker compose up -d`).
+2. Conecte-se iterativamente ao contêiner da sua aplicação executora:
+   ```bash
+   docker exec -it gerencia_app bash
+   ```
+3. Digite o escopo e observe o resultado verde validando a integridade inteira:
+   ```bash
+   bun test
+   ```
+
+*(A API validará a consistência da abstração do Express, forçará as rotas injetando Headers de Cookie temporários, e criará dados fakes para testar os formulários que se apagam sozinhos no decorrer dos 20 testes finalizando isenta de dados acumulativos).*
