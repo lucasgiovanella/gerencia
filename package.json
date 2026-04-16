@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Registro de despesas e receitas",
   "scripts": {
-    "dev": "bun run src/server.ts"
+    "dev": "bun run src/server.ts",
+    "test": "bun test --env-file .env"
   },
   "dependencies": {
     "express": "^4.21.0",

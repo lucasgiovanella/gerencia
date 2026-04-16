@@ -5,10 +5,13 @@ import { pool } from "./database";
 import { Resend } from "resend";
 
 const app = express();
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend | null = null;
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+}
 
 async function sendNotificationEmail(action: "adicionado" | "atualizado", lancamento: any, emailDestino?: string) {
-  if (!process.env.RESEND_API_KEY) {
+  if (!resend) {
     console.warn("RESEND_API_KEY não configurada. E-mail não será enviado.");
     return;
   }
@@ -103,7 +106,7 @@ app.get("/api/me", (req, res) => {
 
 app.get("/api/lancamentos", auth, async (req, res) => {
   try {
-    const { descricao, data_lancamento, tipo_lancamento, situacao } = req.query;
+    const { descricao, data_inicio, data_fim, tipo_lancamento, situacao } = req.query;
     let query = "SELECT * FROM lancamento WHERE 1=1";
     const params: any[] = [];
     let paramCount = 1;
@@ -113,9 +116,14 @@ app.get("/api/lancamentos", auth, async (req, res) => {
       params.push(`%${descricao}%`);
       paramCount++;
     }
-    if (data_lancamento) {
-      query += ` AND data_lancamento = $${paramCount}`;
-      params.push(data_lancamento as string);
+    if (data_inicio) {
+      query += ` AND data_lancamento >= $${paramCount}`;
+      params.push(data_inicio as string);
+      paramCount++;
+    }
+    if (data_fim) {
+      query += ` AND data_lancamento <= $${paramCount}`;
+      params.push(data_fim as string);
       paramCount++;
     }
     if (tipo_lancamento) {

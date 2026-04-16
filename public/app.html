@@ -142,22 +142,28 @@
         padding: 0.35rem 0.6rem;
       }
 
-      /* ---- Filtros ---- */
       .filters-card {
         background: #fff;
         border: 1px solid #ddd;
         border-radius: 8px;
         padding: 1.25rem;
         margin-bottom: 1.5rem;
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 0.75rem;
         align-items: flex-end;
       }
 
       .filters-card > div {
-        flex: 1;
-        min-width: 150px;
+        min-width: 0;
+      }
+
+      .filter-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: flex-end;
+        grid-column: 1 / -1;
+        justify-content: flex-end;
       }
 
       .btn-export {
@@ -321,8 +327,12 @@
         />
       </div>
       <div>
-        <label>Data</label>
-        <input type="date" id="filterData" />
+        <label>Data Início</label>
+        <input type="date" id="filterDataInicio" />
+      </div>
+      <div>
+        <label>Data Fim</label>
+        <input type="date" id="filterDataFim" />
       </div>
       <div>
         <label>Tipo</label>
@@ -340,13 +350,9 @@
           <option value="inativo">Inativo</option>
         </select>
       </div>
-      <div style="flex: 0; display: flex; gap: 0.5rem">
-        <button class="btn-primary" onclick="load()" style="height: 35px">
-          Filtrar
-        </button>
-        <button class="btn-export" onclick="exportPDF()" style="height: 35px">
-          Exportar PDF
-        </button>
+      <div class="filter-actions">
+        <button class="btn-primary" onclick="load()" style="height: 35px; padding: 0 1rem">Filtrar</button>
+        <button class="btn-export" onclick="exportPDF()" style="height: 35px">Exportar PDF</button>
       </div>
     </div>
 
@@ -403,8 +409,10 @@
         const params = new URLSearchParams();
         if ($("filterDescricao").value)
           params.append("descricao", $("filterDescricao").value);
-        if ($("filterData").value)
-          params.append("data_lancamento", $("filterData").value);
+        if ($("filterDataInicio").value)
+          params.append("data_inicio", $("filterDataInicio").value);
+        if ($("filterDataFim").value)
+          params.append("data_fim", $("filterDataFim").value);
         if ($("filterTipo").value)
           params.append("tipo_lancamento", $("filterTipo").value);
         if ($("filterSituacao").value)
