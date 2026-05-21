@@ -89,11 +89,14 @@ jobs:
 
     steps:
       - name: Execute remote SSH commands
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.3
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
           password: ${{ secrets.VM_PASSWORD }}
+          use_insecure_cipher: true
+          debug: true
           script: |
             cd ~/projeto
             git pull origin develop
@@ -108,13 +111,16 @@ jobs:
 
     steps:
       - name: Execute remote SSH commands
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.3
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
+          password: ${{ secrets.VM_PASSWORD }}
+          use_insecure_cipher: true
+          debug: true
           script: |
             cd ~/projeto
             git pull origin main
-            sudo docker compose -f docker-compose.homolog.yml down
-            sudo docker compose -f docker-compose.homolog.yml up -d --build
+            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml up -d --build
