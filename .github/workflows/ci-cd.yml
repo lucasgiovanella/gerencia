@@ -7,7 +7,7 @@ on:
       - develop
   pull_request:
     branches:
-      - '**'
+      - "**"
 
 jobs:
   ci:
@@ -44,8 +44,8 @@ jobs:
       - name: Setup Flyway
         uses: red-gate/setup-flyway@v3
         with:
-          version: '10.0.0'
-          edition: 'community'
+          version: "10.0.0"
+          edition: "community"
           i-agree-to-the-eula: true
 
       - name: Run Flyway Migrations
@@ -112,9 +112,9 @@ jobs:
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
-          password: ${{ secrets.VM_PASSWORD }}
+          key: ${{ secrets.VM_SSH_KEY }}
           script: |
             cd ~/projeto
             git pull origin main
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml up -d --build
+            sudo docker compose -f docker-compose.homolog.yml down
+            sudo docker compose -f docker-compose.homolog.yml up -d --build
