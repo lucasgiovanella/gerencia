@@ -10,14 +10,18 @@ if (process.env.RESEND_API_KEY) {
   resend = new Resend(process.env.RESEND_API_KEY);
 }
 
-async function sendNotificationEmail(action: "adicionado" | "atualizado", lancamento: any, emailDestino?: string) {
+async function sendNotificationEmail(
+  action: "adicionado" | "atualizado",
+  lancamento: any,
+  emailDestino?: string,
+) {
   if (!resend) {
     console.warn("RESEND_API_KEY não configurada. E-mail não será enviado.");
     return;
   }
-  
+
   const receiver = emailDestino || process.env.NOTIFICATION_EMAIL || "lucasgiovanella92@gmail.com";
-  
+
   try {
     await resend.emails.send({
       from: "onboarding@resend.dev",
@@ -30,7 +34,7 @@ async function sendNotificationEmail(action: "adicionado" | "atualizado", lancam
                <li><strong>Valor:</strong> R$ ${Number(lancamento.valor).toFixed(2)}</li>
                <li><strong>Tipo:</strong> ${lancamento.tipo_lancamento}</li>
                <li><strong>Situação:</strong> ${lancamento.situacao}</li>
-             </ul>`
+             </ul>`,
     });
   } catch (error) {
     console.error("Erro ao enviar email via Resend:", error);
@@ -70,7 +74,7 @@ app.post("/api/login", async (req, res) => {
     const { login, senha } = req.body;
     const { rows } = await pool.query(
       "SELECT id, nome FROM usuario WHERE login = $1 AND senha = $2 AND situacao = 'ativo'",
-      [login, senha]
+      [login, senha],
     );
 
     if (!rows.length) {
@@ -160,11 +164,12 @@ app.get("/api/lancamentos/:id", auth, async (req, res) => {
 
 app.post("/api/lancamentos", auth, async (req, res) => {
   try {
-    const { descricao, data_lancamento, valor, tipo_lancamento, situacao, email_notificacao } = req.body;
+    const { descricao, data_lancamento, valor, tipo_lancamento, situacao, email_notificacao } =
+      req.body;
     const { rows } = await pool.query(
       `INSERT INTO lancamento (descricao, data_lancamento, valor, tipo_lancamento, situacao)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [descricao, data_lancamento, valor, tipo_lancamento, situacao || "ativo"]
+      [descricao, data_lancamento, valor, tipo_lancamento, situacao || "ativo"],
     );
     // Envia o e-mail em background sem bloquear a response
     sendNotificationEmail("adicionado", rows[0], email_notificacao);
@@ -177,11 +182,12 @@ app.post("/api/lancamentos", auth, async (req, res) => {
 
 app.put("/api/lancamentos/:id", auth, async (req, res) => {
   try {
-    const { descricao, data_lancamento, valor, tipo_lancamento, situacao, email_notificacao } = req.body;
+    const { descricao, data_lancamento, valor, tipo_lancamento, situacao, email_notificacao } =
+      req.body;
     const { rows } = await pool.query(
       `UPDATE lancamento SET descricao=$1, data_lancamento=$2, valor=$3, tipo_lancamento=$4, situacao=$5
        WHERE id=$6 RETURNING *`,
-      [descricao, data_lancamento, valor, tipo_lancamento, situacao, req.params.id]
+      [descricao, data_lancamento, valor, tipo_lancamento, situacao, req.params.id],
     );
     if (!rows.length) return res.status(404).json({ error: "Não encontrado" });
     // Envia o e-mail em background sem bloquear a response

@@ -1,0 +1,120 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  ci:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: gerencia_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile || bun install
+
+      - name: Setup Flyway
+        uses: red-gate/setup-flyway@v3
+        with:
+          version: '10.0.0'
+          edition: 'community'
+          i-agree-to-the-eula: true
+
+      - name: Run Flyway Migrations
+        run: |
+          flyway migrate \
+            -url=jdbc:postgresql://localhost:5432/gerencia_test \
+            -user=postgres \
+            -password=postgres \
+            -locations=filesystem:db/migrations
+
+      - name: Run Integration Tests
+        run: bun test 2>&1 | tee test-results.txt
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: gerencia_test
+          DB_USER: postgres
+          DB_PASS: postgres
+          NODE_ENV: test
+
+      - name: Run Biome Lint
+        run: bunx biome lint src/
+
+      - name: Run Biome Format Check
+        run: bunx biome format src/ --diagnostic-level=error
+
+      - name: Verify Docker Build
+        run: docker build -t gerencia-app:test .
+
+      - name: Upload Test Results Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.txt
+
+  deploy-homolog:
+    name: Deploy to Homologation
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Execute remote SSH commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            cd ~/projeto
+            git pull origin develop
+            docker compose -f docker-compose.homolog.yml down
+            docker compose -f docker-compose.homolog.yml up -d --build
+
+  deploy-prod:
+    name: Deploy to Production
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Execute remote SSH commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            cd ~/projeto
+            git pull origin main
+            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml up -d --build

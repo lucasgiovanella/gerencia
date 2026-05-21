@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: gerencia_db_homolog
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gerencia_homolog
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_homolog:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: redgate/flyway:10
+    container_name: gerencia_migrate_homolog
+    command: -url=jdbc:postgresql://db:5432/gerencia_homolog -user=postgres -password=postgres -connectRetries=60 migrate
+    volumes:
+      - ./db/migrations:/flyway/sql
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    container_name: gerencia_app_homolog
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: gerencia_homolog
+      DB_USER: postgres
+      DB_PASS: postgres
+      RESEND_API_KEY: ${RESEND_API_KEY}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata_homolog:
