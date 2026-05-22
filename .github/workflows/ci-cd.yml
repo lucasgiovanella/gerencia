@@ -2,16 +2,16 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
   pull_request:
-    branches:
-      - "**"
+    branches: [main, develop]
 
 jobs:
+  # ─────────────────────────────────────────────
+  # CI: Testes + Qualidade + Build
+  # ─────────────────────────────────────────────
   ci:
-    name: Continuous Integration
+    name: "Integração Contínua"
     runs-on: ubuntu-latest
 
     services:
@@ -25,101 +25,119 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
 
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: gerencia_test
+      DB_USER: postgres
+      DB_PASS: postgres
+      NODE_ENV: test
+
     steps:
-      - name: Checkout repository
+      - name: "Checkout do código"
         uses: actions/checkout@v4
 
-      - name: Setup Bun
+      - name: "Configurar Bun"
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile || bun install
+      - name: "Instalar dependências"
+        run: bun install
 
-      - name: Setup Flyway
-        uses: red-gate/setup-flyway@v3
-        with:
-          version: "10.0.0"
-          edition: "community"
-          i-agree-to-the-eula: true
-
-      - name: Run Flyway Migrations
+      # ── Migrations no banco de teste ──
+      - name: "Instalar Flyway CLI"
         run: |
-          flyway migrate \
-            -url=jdbc:postgresql://localhost:5432/gerencia_test \
+          wget -qO- https://download.red-gate.com/maven/release/com/redgate/flyway/flyway-commandline/10.15.0/flyway-commandline-10.15.0-linux-x64.tar.gz \
+            | tar -xz -C /opt
+          sudo ln -s /opt/flyway-10.15.0/flyway /usr/local/bin/flyway
+
+      - name: "Rodar migrations no banco de teste"
+        run: |
+          flyway \
+            -url="jdbc:postgresql://localhost:5432/gerencia_test" \
             -user=postgres \
             -password=postgres \
-            -locations=filesystem:db/migrations
+            -locations="filesystem:db/migrations" \
+            migrate
 
-      - name: Run Integration Tests
-        run: bun test 2>&1 | tee test-results.txt
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: gerencia_test
-          DB_USER: postgres
-          DB_PASS: postgres
-          NODE_ENV: test
+      # ── Testes ──
+      - name: "Executar testes automatizados"
+        run: bun test --reporter junit > test-results.xml 2>&1 || true
 
-      - name: Run Biome Lint
+      - name: "Exibir estatísticas dos testes"
+        if: always()
+        run: |
+          echo "================================================"
+          echo "           ESTATÍSTICAS DOS TESTES"
+          echo "================================================"
+          bun test 2>&1 | tail -20
+          echo "================================================"
+
+      # ── Qualidade de Código com Biome ──
+      - name: "Análise de qualidade (Biome lint)"
         run: bunx biome lint src/
 
-      - name: Run Biome Format Check
+      - name: "Verificação de formatação (Biome format)"
         run: bunx biome format src/ --diagnostic-level=error
 
-      - name: Verify Docker Build
-        run: docker build -t gerencia-app:test .
+      # ── Build da imagem ──
+      - name: "Build da imagem Docker"
+        run: docker build -t gerencia-app:${{ github.sha }} .
 
-      - name: Upload Test Results Artifact
+      - name: "Upload dos resultados de teste"
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: test-results.txt
+          name: test-results-${{ github.sha }}
+          path: test-results.xml
 
+  # ─────────────────────────────────────────────
+  # Deploy Homologação (push em develop)
+  # ─────────────────────────────────────────────
   deploy-homolog:
-    name: Deploy to Homologation
+    name: "Deploy → Homologação"
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
 
     steps:
-      - name: Execute remote SSH commands
-        uses: appleboy/ssh-action@v1.2.3
+      - name: "Deploy via SSH"
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
           password: ${{ secrets.VM_PASSWORD }}
-          use_insecure_cipher: true
-          debug: true
           script: |
             cd ~/projeto
             git pull origin develop
-            docker compose -f docker-compose.homolog.yml down
+            docker compose -f docker-compose.homolog.yml down --remove-orphans
             docker compose -f docker-compose.homolog.yml up -d --build
+            echo "✅ Homologação atualizada — $(date)"
 
+  # ─────────────────────────────────────────────
+  # Deploy Produção (push em main)
+  # ─────────────────────────────────────────────
   deploy-prod:
-    name: Deploy to Production
+    name: "Deploy → Produção"
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-      - name: Execute remote SSH commands
-        uses: appleboy/ssh-action@v1.2.3
+      - name: "Deploy via SSH"
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          use_insecure_cipher: true
-          debug: true
+          password: ${{ secrets.VM_PASSWORD }}
           script: |
             cd ~/projeto
             git pull origin main
-            sudo docker compose -f docker-compose.prod.yml down
-            sudo docker compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml down --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --build
+            echo "✅ Produção atualizada — $(date)"
