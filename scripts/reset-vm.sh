@@ -33,7 +33,7 @@ CLEAR='\033[0m'
 
 echo -e "${RED}================================================================${CLEAR}"
 echo -e "${RED}   RESET COMPLETO DA VM — Gerência de Configuração de Software  ${CLEAR}"
-echo -e "${RED}   Isso vai apagar containers, volumes e imagens do projeto     ${CLEAR}"
+echo -e "${RED}   Apaga containers, imagens, volumes e diretório do projeto      ${CLEAR}"
 echo -e "${RED}================================================================${CLEAR}"
 
 confirmar_reset() {
@@ -42,13 +42,13 @@ confirmar_reset() {
   fi
 
   if [ -t 0 ]; then
-    echo -e "\n${YELLOW}Tem certeza? Isso apaga containers, volumes e imagens do projeto.${CLEAR}"
+    echo -e "\n${YELLOW}Isso apaga TUDO do projeto: containers, imagens, volumes e pastas.${CLEAR}"
     read -r -p "Digite RESETAR para confirmar: " confirmacao
     [ "$confirmacao" = "RESETAR" ]
     return
   fi
 
-  echo -e "${YELLOW}Sem terminal interativo. Use uma das opções:${CLEAR}"
+  echo -e "${YELLOW}Sem terminal interativo. Use:${CLEAR}"
   echo -e "  ${BLUE}curl -fsSL .../reset-vm.sh | CONFIRM_RESET=RESETAR bash${CLEAR}"
   echo -e "  ${BLUE}bash scripts/reset-vm.sh RESETAR${CLEAR}"
   return 1
@@ -61,32 +61,60 @@ fi
 
 REPO_DIR="$(resolve_repo_dir)"
 
-echo -e "\n${YELLOW}[1/4] Derrubando containers do projeto...${CLEAR}"
-for dir in "$REPO_DIR" "$DEFAULT_REPO_DIR" "$HOME/projeto" "$HOME/gerencia"; do
+echo -e "\n${YELLOW}[1/5] Derrubando containers...${CLEAR}"
+while IFS= read -r dir; do
   if [ -d "$dir" ]; then
     echo -e "  Compose down em ${BLUE}$dir${CLEAR}"
     compose_down_all "$dir"
   fi
-done
+done < <(repo_dir_candidates)
 stop_gerencia_containers
 echo -e "  ${GREEN}✓ Containers removidos${CLEAR}"
 
-echo -e "\n${YELLOW}[2/4] Removendo imagens Docker do projeto...${CLEAR}"
+echo -e "\n${YELLOW}[2/5] Removendo volumes...${CLEAR}"
+remove_gerencia_volumes
+echo -e "  ${GREEN}✓ Volumes removidos${CLEAR}"
+
+echo -e "\n${YELLOW}[3/5] Removendo imagens...${CLEAR}"
 remove_gerencia_images
 echo -e "  ${GREEN}✓ Imagens removidas${CLEAR}"
 
-echo -e "\n${YELLOW}[3/4] Limpando volumes órfãos...${CLEAR}"
-docker_cmd volume prune -f 2>/dev/null || true
-echo -e "  ${GREEN}✓ Volumes limpos${CLEAR}"
+echo -e "\n${YELLOW}[4/5] Removendo diretórios do projeto...${CLEAR}"
+while IFS= read -r removed; do
+  echo -e "  ${GREEN}✓ $removed removido${CLEAR}"
+done < <(remove_repo_dirs)
 
-echo -e "\n${YELLOW}[4/4] Status final...${CLEAR}"
-echo -e "\n${BLUE}Containers ativos:${CLEAR}"
-docker_cmd ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "  Nenhum."
+if [ -d "$REPO_DIR" ]; then
+  echo -e "  ${RED}Aviso: $REPO_DIR ainda existe.${CLEAR}"
+else
+  echo -e "  ${GREEN}✓ Nenhum diretório do projeto restante${CLEAR}"
+fi
+
+echo -e "\n${YELLOW}[5/5] Verificação final...${CLEAR}"
+echo -e "\n${BLUE}Containers:${CLEAR}"
+if docker_cmd ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null | grep -q gerencia; then
+  docker_cmd ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep gerencia || true
+else
+  echo "  Nenhum container gerencia_* ativo."
+fi
+
+echo -e "\n${BLUE}Imagens do projeto:${CLEAR}"
+if docker_cmd images 2>/dev/null | grep -qiE "gerencia|projeto-app"; then
+  docker_cmd images | grep -iE "gerencia|projeto-app" || true
+else
+  echo "  Nenhuma imagem do projeto."
+fi
+
+echo -e "\n${BLUE}Diretório padrão (${DEFAULT_REPO_DIR}):${CLEAR}"
+if [ -d "$DEFAULT_REPO_DIR" ]; then
+  echo -e "  ${RED}Ainda existe${CLEAR}"
+else
+  echo -e "  ${GREEN}Removido${CLEAR}"
+fi
 
 echo -e "\n${GREEN}================================================================${CLEAR}"
-echo -e "${GREEN}   VM resetada. Pronta para demonstração.                       ${CLEAR}"
+echo -e "${GREEN}   VM resetada. Pronta para o setup do zero.                    ${CLEAR}"
 echo -e "${GREEN}================================================================${CLEAR}"
 echo -e "\nPróximo passo:"
 echo -e "${BLUE}curl -fsSL https://raw.githubusercontent.com/lucasgiovanella/gerencia/main/scripts/setup-vm.sh | bash${CLEAR}"
-echo -e "\nReset via pipe:"
-echo -e "${BLUE}curl -fsSL https://raw.githubusercontent.com/lucasgiovanella/gerencia/main/scripts/reset-vm.sh | CONFIRM_RESET=RESETAR bash${CLEAR}\n"
+echo -e "${BLUE}bash scripts/setup-vm.sh${CLEAR}\n"
