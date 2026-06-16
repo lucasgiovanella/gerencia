@@ -1,7 +1,7 @@
 .PHONY: setup-vm homolog-up homolog-down prod-up prod-down test lint logs-homolog logs-prod
 
 setup-vm:
-	@chmod +x scripts/setup-vm.sh
+	@chmod +x scripts/setup-vm.sh scripts/reset-vm.sh scripts/common.sh
 	@./scripts/setup-vm.sh
 
 homolog-up:

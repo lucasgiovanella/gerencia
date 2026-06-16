@@ -37,7 +37,7 @@ echo -e "${RED}   Isso vai apagar containers, volumes e imagens do projeto     $
 echo -e "${RED}================================================================${CLEAR}"
 
 confirmar_reset() {
-  if [ "${CONFIRM_RESET:-}" = "RESETAR" ]; then
+  if [ "${CONFIRM_RESET:-}" = "RESETAR" ] || [ "${1:-}" = "RESETAR" ] || [ "${1:-}" = "-y" ] || [ "${1:-}" = "--yes" ]; then
     return 0
   fi
 
@@ -48,12 +48,13 @@ confirmar_reset() {
     return
   fi
 
-  echo -e "${YELLOW}Sem terminal interativo. Use:${CLEAR}"
-  echo -e "  ${BLUE}CONFIRM_RESET=RESETAR curl -fsSL .../reset-vm.sh | bash${CLEAR}"
+  echo -e "${YELLOW}Sem terminal interativo. Use uma das opções:${CLEAR}"
+  echo -e "  ${BLUE}curl -fsSL .../reset-vm.sh | CONFIRM_RESET=RESETAR bash${CLEAR}"
+  echo -e "  ${BLUE}bash scripts/reset-vm.sh RESETAR${CLEAR}"
   return 1
 }
 
-if ! confirmar_reset; then
+if ! confirmar_reset "$@"; then
   echo -e "${GREEN}Cancelado. Nada foi alterado.${CLEAR}"
   exit 0
 fi
@@ -86,4 +87,6 @@ echo -e "\n${GREEN}=============================================================
 echo -e "${GREEN}   VM resetada. Pronta para demonstração.                       ${CLEAR}"
 echo -e "${GREEN}================================================================${CLEAR}"
 echo -e "\nPróximo passo:"
-echo -e "${BLUE}curl -fsSL https://raw.githubusercontent.com/lucasgiovanella/gerencia/main/scripts/setup-vm.sh | bash${CLEAR}\n"
+echo -e "${BLUE}curl -fsSL https://raw.githubusercontent.com/lucasgiovanella/gerencia/main/scripts/setup-vm.sh | bash${CLEAR}"
+echo -e "\nReset via pipe:"
+echo -e "${BLUE}curl -fsSL https://raw.githubusercontent.com/lucasgiovanella/gerencia/main/scripts/reset-vm.sh | CONFIRM_RESET=RESETAR bash${CLEAR}\n"
