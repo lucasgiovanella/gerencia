@@ -22,11 +22,49 @@ resolve_repo_dir() {
 }
 
 repo_dir_candidates() {
-  printf '%s\n' \
-    "$DEFAULT_REPO_DIR" \
-    "$HOME/projeto" \
-    "$HOME/gerencia" \
+  local paths=(
+    "/home/univates/gerencia"
+    "/home/univates/projeto"
     "/root/projeto"
+    "/root/gerencia"
+  )
+
+  if [ -n "${REPO_DIR:-}" ]; then
+    paths+=("$REPO_DIR")
+  fi
+
+  paths+=("$HOME/projeto" "$HOME/gerencia")
+
+  printf '%s\n' "${paths[@]}" | awk '!seen[$0]++ && $0 != ""'
+}
+
+remove_repo_dir() {
+  local dir="$1"
+
+  [ -n "$dir" ] || return 0
+  [ -d "$dir" ] || return 0
+
+  chmod -R u+w "$dir" 2>/dev/null || true
+  rm -rf -- "$dir" 2>/dev/null || true
+
+  if [ -e "$dir" ]; then
+    echo "FALHA:$dir"
+    return 1
+  fi
+
+  echo "OK:$dir"
+}
+
+remove_repo_dirs() {
+  local dir result
+  cd / || exit 1
+
+  while IFS= read -r dir; do
+    result="$(remove_repo_dir "$dir" || true)"
+    if [ -n "$result" ]; then
+      echo "$result"
+    fi
+  done < <(repo_dir_candidates)
 }
 
 compose_down_all() {
@@ -45,6 +83,12 @@ compose_down_all() {
 stop_gerencia_containers() {
   local ids
   ids="$(docker_cmd ps -aq --filter "name=gerencia_" 2>/dev/null || true)"
+  if [ -n "$ids" ]; then
+    # shellcheck disable=SC2086
+    docker_cmd rm -f $ids 2>/dev/null || true
+  fi
+
+  ids="$(docker_cmd ps -aq --filter "name=projeto" 2>/dev/null || true)"
   if [ -n "$ids" ]; then
     # shellcheck disable=SC2086
     docker_cmd rm -f $ids 2>/dev/null || true
@@ -76,18 +120,6 @@ remove_gerencia_volumes() {
     docker_cmd volume rm -f $vols 2>/dev/null || true
   fi
   docker_cmd volume prune -f 2>/dev/null || true
-}
-
-remove_repo_dirs() {
-  local dir
-  cd / || exit 1
-  while IFS= read -r dir; do
-    [ -n "$dir" ] || continue
-    if [ -d "$dir" ]; then
-      rm -rf "$dir"
-      echo "$dir"
-    fi
-  done < <(repo_dir_candidates)
 }
 
 ensure_repo_dir() {

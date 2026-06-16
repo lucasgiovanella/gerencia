@@ -59,8 +59,6 @@ if ! confirmar_reset "$@"; then
   exit 0
 fi
 
-REPO_DIR="$(resolve_repo_dir)"
-
 echo -e "\n${YELLOW}[1/5] Derrubando containers...${CLEAR}"
 while IFS= read -r dir; do
   if [ -d "$dir" ]; then
@@ -80,14 +78,28 @@ remove_gerencia_images
 echo -e "  ${GREEN}✓ Imagens removidas${CLEAR}"
 
 echo -e "\n${YELLOW}[4/5] Removendo diretórios do projeto...${CLEAR}"
-while IFS= read -r removed; do
-  echo -e "  ${GREEN}✓ $removed removido${CLEAR}"
+cd /
+while IFS= read -r result; do
+  case "$result" in
+    OK:*)
+      echo -e "  ${GREEN}✓ ${result#OK:} removido${CLEAR}"
+      ;;
+    FALHA:*)
+      echo -e "  ${RED}✗ Não foi possível remover ${result#FALHA:}${CLEAR}"
+      ;;
+  esac
 done < <(remove_repo_dirs)
 
-if [ -d "$REPO_DIR" ]; then
-  echo -e "  ${RED}Aviso: $REPO_DIR ainda existe.${CLEAR}"
-else
-  echo -e "  ${GREEN}✓ Nenhum diretório do projeto restante${CLEAR}"
+falhas=0
+while IFS= read -r dir; do
+  if [ -d "$dir" ]; then
+    echo -e "  ${RED}Aviso: $dir ainda existe.${CLEAR}"
+    falhas=$((falhas + 1))
+  fi
+done < <(repo_dir_candidates)
+
+if [ "$falhas" -eq 0 ]; then
+  echo -e "  ${GREEN}✓ Todos os diretórios do projeto foram removidos${CLEAR}"
 fi
 
 echo -e "\n${YELLOW}[5/5] Verificação final...${CLEAR}"
@@ -105,12 +117,14 @@ else
   echo "  Nenhuma imagem do projeto."
 fi
 
-echo -e "\n${BLUE}Diretório padrão (${DEFAULT_REPO_DIR}):${CLEAR}"
-if [ -d "$DEFAULT_REPO_DIR" ]; then
-  echo -e "  ${RED}Ainda existe${CLEAR}"
-else
-  echo -e "  ${GREEN}Removido${CLEAR}"
-fi
+echo -e "\n${BLUE}Diretórios do projeto:${CLEAR}"
+while IFS= read -r dir; do
+  if [ -d "$dir" ]; then
+    echo -e "  ${RED}✗ $dir ainda existe${CLEAR}"
+  else
+    echo -e "  ${GREEN}✓ $dir removido${CLEAR}"
+  fi
+done < <(repo_dir_candidates)
 
 echo -e "\n${GREEN}================================================================${CLEAR}"
 echo -e "${GREEN}   VM resetada. Pronta para o setup do zero.                    ${CLEAR}"
