@@ -15,7 +15,7 @@ describe("04 - Testes de Cadastros, Edições e E-mails (Lançamentos)", () => {
 
   it("12 - Deve listar todos os lançamentos via GET com autenticação", async () => {
     const res = await request(app).get("/api/lancamentos").set("Cookie", cookie);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(999);
     expect(Array.isArray(res.body)).toBe(true);
   });
 
