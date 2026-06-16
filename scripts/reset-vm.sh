@@ -1,6 +1,30 @@
 #!/bin/bash
 set -e
 
+COMMON_URL="https://raw.githubusercontent.com/lucasgiovanella/gerencia/main/scripts/common.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+
+load_common() {
+  if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/common.sh" ]; then
+    # shellcheck source=common.sh
+    source "$SCRIPT_DIR/common.sh"
+    return
+  fi
+  if [ -f "./scripts/common.sh" ]; then
+    # shellcheck source=common.sh
+    source "./scripts/common.sh"
+    return
+  fi
+  local tmp
+  tmp="$(mktemp)"
+  curl -fsSL "$COMMON_URL" -o "$tmp"
+  # shellcheck source=/dev/null
+  source "$tmp"
+  rm -f "$tmp"
+}
+
+load_common
+
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
@@ -9,73 +33,57 @@ CLEAR='\033[0m'
 
 echo -e "${RED}================================================================${CLEAR}"
 echo -e "${RED}   RESET COMPLETO DA VM — Gerência de Configuração de Software  ${CLEAR}"
-echo -e "${RED}   Isso vai apagar TUDO relacionado ao projeto                  ${CLEAR}"
+echo -e "${RED}   Isso vai apagar containers, volumes e imagens do projeto     ${CLEAR}"
 echo -e "${RED}================================================================${CLEAR}"
 
-# Confirmação obrigatória
-echo -e "\n${YELLOW}Tem certeza? Isso apaga containers, volumes, imagens e o repositório.${CLEAR}"
-read -p "Digite RESETAR para confirmar: " confirmacao
+confirmar_reset() {
+  if [ "${CONFIRM_RESET:-}" = "RESETAR" ]; then
+    return 0
+  fi
 
-if [ "$confirmacao" != "RESETAR" ]; then
+  if [ -t 0 ]; then
+    echo -e "\n${YELLOW}Tem certeza? Isso apaga containers, volumes e imagens do projeto.${CLEAR}"
+    read -r -p "Digite RESETAR para confirmar: " confirmacao
+    [ "$confirmacao" = "RESETAR" ]
+    return
+  fi
+
+  echo -e "${YELLOW}Sem terminal interativo. Use:${CLEAR}"
+  echo -e "  ${BLUE}CONFIRM_RESET=RESETAR curl -fsSL .../reset-vm.sh | bash${CLEAR}"
+  return 1
+}
+
+if ! confirmar_reset; then
   echo -e "${GREEN}Cancelado. Nada foi alterado.${CLEAR}"
   exit 0
 fi
 
-echo -e "\n${YELLOW}[1/5] Derrubando containers do projeto...${CLEAR}"
-REPO_DIR="$HOME/projeto"
+REPO_DIR="$(resolve_repo_dir)"
 
-if [ -d "$REPO_DIR" ]; then
-  cd "$REPO_DIR"
-
-  # Derruba cada ambiente se existir
-  if [ -f docker-compose.homolog.yml ]; then
-    sudo docker compose -f docker-compose.homolog.yml down --volumes --remove-orphans 2>/dev/null || true
-    echo -e "  ${GREEN}✓ Homologação derrubada${CLEAR}"
+echo -e "\n${YELLOW}[1/4] Derrubando containers do projeto...${CLEAR}"
+for dir in "$REPO_DIR" "$DEFAULT_REPO_DIR" "$HOME/projeto" "$HOME/gerencia"; do
+  if [ -d "$dir" ]; then
+    echo -e "  Compose down em ${BLUE}$dir${CLEAR}"
+    compose_down_all "$dir"
   fi
+done
+stop_gerencia_containers
+echo -e "  ${GREEN}✓ Containers removidos${CLEAR}"
 
-  if [ -f docker-compose.prod.yml ]; then
-    sudo docker compose -f docker-compose.prod.yml down --volumes --remove-orphans 2>/dev/null || true
-    echo -e "  ${GREEN}✓ Produção derrubada${CLEAR}"
-  fi
-
-  if [ -f docker-compose.yml ]; then
-    sudo docker compose down --volumes --remove-orphans 2>/dev/null || true
-    echo -e "  ${GREEN}✓ Dev local derrubado${CLEAR}"
-  fi
-else
-  echo -e "  Diretório $REPO_DIR não encontrado. Pulando."
-fi
-
-echo -e "\n${YELLOW}[2/5] Removendo imagens Docker do projeto...${CLEAR}"
-sudo docker images --format "{{.Repository}} {{.ID}}" | grep -E "gerencia|flyway" | awk '{print $2}' | xargs -r sudo docker rmi -f 2>/dev/null || true
+echo -e "\n${YELLOW}[2/4] Removendo imagens Docker do projeto...${CLEAR}"
+remove_gerencia_images
 echo -e "  ${GREEN}✓ Imagens removidas${CLEAR}"
 
-echo -e "\n${YELLOW}[3/5] Limpando volumes órfãos...${CLEAR}"
-sudo docker volume prune -f 2>/dev/null || true
+echo -e "\n${YELLOW}[3/4] Limpando volumes órfãos...${CLEAR}"
+docker_cmd volume prune -f 2>/dev/null || true
 echo -e "  ${GREEN}✓ Volumes limpos${CLEAR}"
 
-echo -e "\n${YELLOW}[4/5] Removendo o repositório clonado...${CLEAR}"
-if [ -d "$REPO_DIR" ]; then
-  rm -rf "$REPO_DIR"
-  echo -e "  ${GREEN}✓ ~/projeto removido${CLEAR}"
-else
-  echo -e "  Nada para remover."
-fi
-
-echo -e "\n${YELLOW}[5/5] Removendo configuração de sudo sem senha (opcional)...${CLEAR}"
-if [ -f /etc/sudoers.d/docker-nopasswd ]; then
-  sudo rm -f /etc/sudoers.d/docker-nopasswd
-  echo -e "  ${GREEN}✓ Regra sudo removida${CLEAR}"
-else
-  echo -e "  Nenhuma regra encontrada."
-fi
-
-# Status final
-echo -e "\n${BLUE}Containers ativos após reset:${CLEAR}"
-sudo docker ps --format "table {{.Names}}\t{{.Status}}" 2>/dev/null || echo "  Nenhum."
+echo -e "\n${YELLOW}[4/4] Status final...${CLEAR}"
+echo -e "\n${BLUE}Containers ativos:${CLEAR}"
+docker_cmd ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "  Nenhum."
 
 echo -e "\n${GREEN}================================================================${CLEAR}"
-echo -e "${GREEN}   VM resetada com sucesso. Pronta para demonstração.           ${CLEAR}"
+echo -e "${GREEN}   VM resetada. Pronta para demonstração.                       ${CLEAR}"
 echo -e "${GREEN}================================================================${CLEAR}"
-echo -e "\nPróximo passo — rodar o setup do zero:"
+echo -e "\nPróximo passo:"
 echo -e "${BLUE}curl -fsSL https://raw.githubusercontent.com/lucasgiovanella/gerencia/main/scripts/setup-vm.sh | bash${CLEAR}\n"
