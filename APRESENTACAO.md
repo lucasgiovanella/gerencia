@@ -8,8 +8,9 @@ Guia rápido para demonstrar na VM **VMLS109** o fluxo completo: reset → setup
 
 | Item | Valor |
 |------|-------|
-| VM | `ssh lucas@177.44.248.109` (ou usuário `univates`) |
-| Diretório do projeto | `/home/univates/gerencia` |
+| VM | `ssh root@177.44.248.109` (ou `univates@...`) |
+| Diretório manual (setup/reset) | `/home/univates/gerencia` |
+| Deploy automático (runner) | workspace do runner — onde o `checkout` baixa o código |
 | Homologação | http://177.44.248.109:3001 |
 | Produção | http://177.44.248.109:3002 |
 | Login | `admin` / `admin123` |
@@ -113,7 +114,9 @@ Roda na **sua VM** (`runs-on: self-hosted`). É um agente do GitHub Actions inst
 
 - Fica conectado ao repositório aguardando jobs
 - Só recebe trabalho **depois** que o job `ci` passa (`needs: ci`)
-- Executa comandos diretamente na VM em `/home/univates/gerencia`
+- Executa `docker compose` no **workspace do runner** (`${{ github.workspace }}` — pasta onde o `checkout` baixa o código)
+- Não usa `/home/univates/gerencia` no deploy: essa pasta tem permissão restrita ao usuário `univates`
+- O `checkout` já traz o commit certo — não precisa de `git pull`
 
 | Job | Quando roda | O que faz na VM |
 |-----|-------------|-----------------|
