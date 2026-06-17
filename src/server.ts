@@ -41,6 +41,7 @@ async function sendNotificationEmail(
   }
 }
 const PORT = Number(process.env.PORT) || 3000;
+const erroBiomeDemo = "falha proposital no lint";
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
