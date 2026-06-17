@@ -41,7 +41,9 @@ async function sendNotificationEmail(
   }
 }
 const PORT = Number(process.env.PORT) || 3000;
-const erroBiomeDemo = "falha proposital no lint";
+// DEMO: remover após apresentação — quebra lint (debugger) e format (aspas simples)
+debugger;
+const erroBiomeDemo='falha proposital no biome';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

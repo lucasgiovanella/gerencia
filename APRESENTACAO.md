@@ -345,13 +345,14 @@ Arquivo: `public/app.html` — mudar o título ou adicionar um texto visível, e
 
 ### 3b. Forçar erro do Biome (obrigatório em `src/`)
 
-Arquivo: `src/server.ts` — adicionar linha inválida:
+Arquivo: `src/server.ts` — use erros que quebram **lint** e **format**:
 
 ```typescript
-const _erroBiome = "vai falhar no lint";
+debugger;
+const erroBiomeDemo='aspas simples quebram o format';
 ```
 
-> Biome **não** verifica `public/`. O erro precisa estar em `src/`.
+> Biome **não** verifica `public/` nem `testes/`. O CI roda **dois** passos: `biome lint` (regras) e `biome format` (formatação). Variável não usada pode passar; `debugger` falha no lint, aspas simples falham no format.
 
 ### 3c. Forçar erro de teste
 
