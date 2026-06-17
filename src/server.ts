@@ -7,7 +7,7 @@ import { Resend } from "resend";
 const app = express();
 let resend: Resend | null = null;
 if (process.env.RESEND_API_KEY) {
-    resend = new Resend(process.env.RESEND_API_KEY);
+  resend = new Resend(process.env.RESEND_API_KEY);
 }
 
 async function sendNotificationEmail(
@@ -16,7 +16,7 @@ async function sendNotificationEmail(
   emailDestino?: string,
 ) {
   if (!resend) {
-    console.warn('RESEND_API_KEY não configurada. E-mail não será enviado.');
+    console.warn("RESEND_API_KEY não configurada. E-mail não será enviado.");
     return;
   }
 
@@ -40,7 +40,7 @@ async function sendNotificationEmail(
     console.error("Erro ao enviar email via Resend:", error);
   }
 }
-const PORT=Number(process.env.PORT)||3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
