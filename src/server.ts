@@ -60,7 +60,7 @@ function parseCookies(header: string) {
 
 // --- Middleware de autenticação ---
 function auth(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const cookies = parseCookies(req.headers.cookie || "");
+  const cookies = parseCookies(req.headers.cookie || "");
   const session = sessions.get(cookies.session_id || "");
   if (!session) return res.status(401).json({ error: "Não autenticado" });
   (req as any).user = session;
