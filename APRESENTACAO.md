@@ -343,15 +343,24 @@ Arquivo: `public/app.html` — mudar o título ou adicionar um texto visível, e
 <h1>Gerência Financeira — HOMOLOG v2</h1>
 ```
 
-### 3b. Forçar erro do Biome (obrigatório em `src/`)
+### 3b. Forçar erro do Biome — formatação incorreta (`src/`)
 
-Arquivo: `src/server.ts` — adicionar linha inválida:
+Arquivo: `src/server.ts` — erros comuns de quem não rodou o formatador:
 
 ```typescript
-const _erroBiome = "vai falhar no lint";
+// indentação com 4 espaços (projeto usa 2)
+if (process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+}
+
+// aspas simples (projeto exige duplas)
+console.warn('RESEND_API_KEY não configurada...');
+
+// sem espaços ao redor de operadores
+const PORT=Number(process.env.PORT)||3000;
 ```
 
-> Biome **não** verifica `public/`. O erro precisa estar em `src/`.
+> O CI roda `biome format src/ --diagnostic-level=error`. Isso barra código fora do padrão do time — não precisa de palavra-chave especial.
 
 ### 3c. Forçar erro de teste
 
